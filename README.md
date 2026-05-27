@@ -5,6 +5,15 @@
 Sistema de controle e gestão de dispenser de precisão utilizando o ecossistema **Java/Spring** para a lógica de negócio e o **ESP32** como interface de hardware.
 
 ---
+## Testes e Calibração da Bomba
+
+Para garantir a precisão do dispenser, realizamos testes práticos variando a tensão e medindo o tempo de resposta da bomba. Os dados coletados de vazão, corrente e tempo estão consolidados na tabela abaixo:
+
+![Tabela de Calibração de Vazão](./img/testes_vazão.png)
+
+> **Nota de Engenharia:** Com base nesses testes, optamos por fixar a operação na tensão mínima de **2.4V**. Nessa faixa, a vazão oferece a melhor resolução para o controle de tempo no nosso backend em Spring Boot, minimizando o erro por inércia e evitando transbordamentos.
+
+---
 
 ## 📋 Sobre o Projeto
 
