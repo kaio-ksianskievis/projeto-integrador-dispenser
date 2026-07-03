@@ -2,55 +2,59 @@
 
 > **Projeto Integrador - Engenharia da Computação (UFSM)**
 
-Sistema de controle e gestão de dispenser de precisão utilizando o ecossistema **Java/Spring** para a lógica de negócio e o **ESP32** como interface de hardware.
+Sistema de controle e gestão de dispenser de precisão operando de forma autônoma. O projeto utiliza um **ESP32** atuando como Web Server embutido (Edge Computing), hospedando sua própria interface de usuário e controlando o hardware em tempo real sem a necessidade de um servidor back-end externo.
 
 ---
+
 ## Testes e Calibração da Bomba
 
 Para garantir a precisão do dispenser, realizamos testes práticos variando a tensão e medindo o tempo de resposta da bomba. Os dados coletados de vazão, corrente e tempo estão consolidados na tabela abaixo:
 
-![Tabela de Calibração de Vazão](./img/testes_vazão.png)
+![Tabela de Calibração de Vazão](./img/vazao_bomba.png)
 
-> **Nota de Engenharia:** Com base nesses testes, optamos por fixar a operação na tensão mínima de **2.4V**. Nessa faixa, a vazão oferece a melhor resolução para o controle de tempo no nosso backend em Spring Boot, minimizando o erro por inércia e evitando transbordamentos.
+> **Nota de Engenharia:** Com base nesses testes, optamos por fixar a operação na tensão mínima de **2.4V** utilizando um módulo conversor Buck. Nessa faixa, a vazão oferece a melhor resolução para a matemática de controle de tempo no nosso firmware C++, minimizando o erro por inércia do motor e evitando transbordamentos.
 
 ---
 
 ## 📋 Sobre o Projeto
 
-Este projeto evoluiu para uma arquitetura moderna de IoT, onde a robustez do **Spring Boot** é utilizada para gerir o fluxo de dados e regras de dosagem, enquanto o **ESP32** atua na ponta, executando os comandos de hardware.
+Este projeto foi arquitetado com foco na estabilidade elétrica e independência de rede, características essenciais para sistemas embarcados em apresentação.
 
 ### Principais Funcionalidades
-* **Gestão via API:** Controlo de dosagem e monitorização através de endpoints REST.
-* **Integração IoT:** Comunicação eficiente entre o microcontrolador e o servidor Java.
-* **Escalabilidade:** Estrutura preparada para suportar múltiplos dispensers e persistência de dados.
+* **Web Server Embutido:** A interface (HTML/CSS/JS) é hospedada diretamente na memória Flash do ESP32 utilizando `PROGMEM`, garantindo baixa latência e dispensando hospedagem externa.
+* **Cálculo Dinâmico de Vazão:** O usuário insere a quantidade em mililitros (ml) via interface Web, e o JavaScript realiza a conversão em tempo de acionamento do relé com base no fator de calibração prático.
+* **Isolação de Domínios de Energia:** Arquitetura de hardware projetada para isolar a alimentação do microcontrolador (5V lógico) da alimentação de força motriz (Bateria/Pilhas reguladas via LM2596), prevenindo resets por *brownout* devido ao pico de partida do motor.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-### Back-end (API)
-* **Linguagem:** Java 17+
-* **Framework:** Spring Boot 3
-* **Segurança:** Spring Security (JWT opcional)
-* **Persistência:** Spring Data JPA (Hibernate)
+### Software (Firmware e Interface)
+* **Linguagem Principal:** C/C++ (Arduino Core para ESP32)
+* **Bibliotecas:** `WiFi.h`, `WebServer.h`
+* **Front-end:** HTML5, CSS3, Vanilla JavaScript (Embutidos no C++)
 
 ### Hardware
-* **Microcontrolador:** ESP32
-* **Comunicação:** Protocolo HTTP / MQTT
+* **Microcontrolador:** ESP32 (DevKit V1 / WROOM-32)
+* **Atuador:** Bomba de Água RS 385 (Diafragma)
+* **Chaveamento:** Módulo Relé 5V (1 Canal)
+* **Regulação de Força:** Módulo Step-Down LM2596
+* **Alimentação:** Fonte USB 5V (ESP32) + Suporte Independente de 4 Pilhas AA / Bateria de Lítio (Bomba)
 
 ---
 
-## 📂 Estrutura do Repositório
+## 🔧 Como Executar (Setup)
 
-* `/api` - Código fonte do servidor Spring Boot.
-* `/firmware` - Código do ESP32 para comunicação com o servidor.
-* `/docs` - Documentação técnica e esquemas do projeto.
+### 1. Montagem do Hardware (Atenção à Isolação)
+Para reproduzir o projeto sem travamentos, respeite a separação de energia:
+1. Conecte o **ESP32** na tomada via cabo USB (Pino `VIN` e `GND` alimentam a lógica do Relé).
+2. Conecte a fonte de baterias isolada na entrada (`IN+` / `IN-`) do **LM2596**. Regule a saída para **2.4V**.
+3. Use o pino **COM** e **NO** do Relé para chavear apenas o polo positivo que sai do LM2596 para a Bomba de Água. O `GND` da saída do LM2596 vai direto para a bomba.
+4. O pino de sinal (`IN`) do Relé vai ao pino Digital `D4` do ESP32.
 
----
-
-## 🔧 Como Executar
-
-### 1. Servidor (Back-end)
-```bash
-cd api
-./mvnw spring-boot:run
+### 2. Configuração do Firmware
+1. Abra o arquivo `.ino` ou `main.cpp` na IDE (Arduino IDE / PlatformIO).
+2. Localize as variáveis de rede e insira as credenciais de um **Hotspot Móvel (2.4 GHz)** para contornar bloqueios de redes institucionais corporativas:
+   ```cpp
+   const char* ssid = "NOME_DO_SEU_HOTSPOT";
+   const char* password = "SENHA";
